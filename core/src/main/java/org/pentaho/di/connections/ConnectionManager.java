@@ -23,8 +23,10 @@
 package org.pentaho.di.connections;
 
 import org.pentaho.di.connections.utils.EncryptUtils;
+import org.pentaho.di.connections.utils.VFSConnectionTestOptions;
+import org.pentaho.di.connections.vfs.VFSConnectionDetails;
+import org.pentaho.di.connections.vfs.VFSConnectionProvider;
 import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.metastore.api.IMetaStore;
 import org.pentaho.metastore.api.exceptions.MetaStoreException;
 import org.pentaho.metastore.persist.MetaStoreFactory;
@@ -658,6 +660,20 @@ public class ConnectionManager {
       types.add( new ConnectionManager.Type( provider.getKey(), provider.getName() ) );
     }
     return types;
+  }
+
+  /**
+   * Run a test operation on the named connection
+   *
+   * @param connectionDetails The named connection details to test
+   * @return A boolean signifying the success of the test operation
+   */
+  @SuppressWarnings( "unchecked" )
+  public <T extends VFSConnectionDetails> boolean test( T connectionDetails, VFSConnectionTestOptions options )
+          throws KettleException {
+    VFSConnectionProvider<T> connectionProvider =
+            (VFSConnectionProvider<T>) connectionProviders.get( connectionDetails.getType() );
+    return connectionProvider.test( connectionDetails, options );
   }
 
   /**

@@ -22,8 +22,14 @@
 
 package org.pentaho.di.connections.vfs;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
 import org.pentaho.di.connections.ConnectionDetails;
 import org.pentaho.di.connections.ConnectionManager;
+import org.pentaho.di.connections.utils.VFSConnectionTestOptions;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.value.ValueMetaBase;
 import org.pentaho.di.core.util.Utils;
@@ -37,6 +43,7 @@ import java.util.function.Supplier;
 public abstract class BaseVFSConnectionProvider<T extends VFSConnectionDetails> implements VFSConnectionProvider<T> {
 
   private Supplier<ConnectionManager> connectionManagerSupplier = ConnectionManager::getInstance;
+  private static final Log LOGGER = LogFactory.getLog( BaseVFSConnectionProvider.class );
 
   @Override public List<String> getNames() {
     return connectionManagerSupplier.get().getNamesByType( getClass() );
@@ -77,5 +84,52 @@ public abstract class BaseVFSConnectionProvider<T extends VFSConnectionDetails> 
 
   protected VariableSpace getSpace( ConnectionDetails connectionDetails ) {
     return connectionDetails.getSpace() == null ? Variables.getADefaultVariableSpace() : connectionDetails.getSpace();
+  }
+  // Check exists... pvfs://connection name ->  exists ?
+  // 1. External path / Generic file path: pvfs://connection name/foo // ConnectionFileProvider  END USER
+  // 2. Internal path / Apache VFS path / Connection path: s3-avfs://foo + FSOptions (Connection Name)
+  // 3. Physical path: S3 API actually knows of: s3://root/path/here/foo  ADMIN USER will config the root physical path
+
+  // Local
+  // 2. Internal path: local://foo + FSOptions (Connection Name, Root Path...)
+  // 3. Physical path: c:/root/path/here/foo
+  // KettleVFS.getFileObject() -->> FileObject -->> FileName -->> FileSystem
+  @Override
+  public boolean test( T connectionDetails, VFSConnectionTestOptions vfsConnectionTestOptions ) throws KettleException {
+    boolean valid = test( connectionDetails );
+    if ( !valid ) {
+      return false;
+    }
+
+    if ( !connectionDetails.isSupportsRootPath()  || vfsConnectionTestOptions.isIgnoreRootPath() ) {
+      return true;
+    }
+
+    String resolvedRootLocation = getResolvedRootPath( connectionDetails );
+    if ( resolvedRootLocation == null ) {
+      return !connectionDetails.isRootPathRequired();
+    }
+
+
+
+    FileObject fileObject = getDirectFile( connectionDetails, connectionDetails.getDomain() );
+    try {
+      return fileObject.exists();
+    } catch ( FileSystemException fileSystemException ) {
+      LOGGER.error( fileSystemException.getMessage() );
+      return false;
+    }
+  }
+
+  public String getResolvedRootPath( VFSConnectionDetails connectionDetails ) {
+    if ( StringUtils.isNotEmpty( connectionDetails.getRootPath() ) ) {
+      VariableSpace space = getSpace( connectionDetails );
+      String resolvedRootLocation = getVar( connectionDetails.getRootPath(), space );
+      if ( StringUtils.isNotBlank( resolvedRootLocation ) ) {
+        return resolvedRootLocation;
+      }
+    }
+
+    return null;
   }
 }
