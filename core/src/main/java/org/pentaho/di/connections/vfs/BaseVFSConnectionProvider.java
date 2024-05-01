@@ -35,6 +35,7 @@ import org.pentaho.di.core.row.value.ValueMetaBase;
 import org.pentaho.di.core.util.Utils;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.variables.Variables;
+import org.pentaho.di.core.vfs.KettleVFS;
 
 import java.util.List;
 import java.util.Objects;
@@ -42,8 +43,20 @@ import java.util.function.Supplier;
 
 public abstract class BaseVFSConnectionProvider<T extends VFSConnectionDetails> implements VFSConnectionProvider<T> {
 
-  private Supplier<ConnectionManager> connectionManagerSupplier = ConnectionManager::getInstance;
+  private final Supplier<ConnectionManager> connectionManagerSupplier;
+
   private static final Log LOGGER = LogFactory.getLog( BaseVFSConnectionProvider.class );
+
+  public static final String DELIMITER = "/";
+
+  protected BaseVFSConnectionProvider() {
+    this( ConnectionManager::getInstance );
+  }
+
+  protected BaseVFSConnectionProvider( Supplier<ConnectionManager> connectionManagerSupplier ) {
+    Objects.requireNonNull( connectionManagerSupplier );
+    this.connectionManagerSupplier = connectionManagerSupplier;
+  }
 
   @Override public List<String> getNames() {
     return connectionManagerSupplier.get().getNamesByType( getClass() );
@@ -105,14 +118,14 @@ public abstract class BaseVFSConnectionProvider<T extends VFSConnectionDetails> 
       return true;
     }
 
-    String resolvedRootLocation = getResolvedRootPath( connectionDetails );
-    if ( resolvedRootLocation == null ) {
+    String resolvedRootPath = getResolvedRootPath( connectionDetails );
+    if ( resolvedRootPath == null ) {
       return !connectionDetails.isRootPathRequired();
     }
 
+    String internalUrl = buildUrl( connectionDetails, resolvedRootPath );
+    FileObject fileObject = KettleVFS.getFileObject( internalUrl, new Variables(), getOpts( connectionDetails ) );
 
-
-    FileObject fileObject = getDirectFile( connectionDetails, connectionDetails.getDomain() );
     try {
       return fileObject.exists();
     } catch ( FileSystemException fileSystemException ) {
@@ -121,15 +134,36 @@ public abstract class BaseVFSConnectionProvider<T extends VFSConnectionDetails> 
     }
   }
 
+  @Override
   public String getResolvedRootPath( VFSConnectionDetails connectionDetails ) {
     if ( StringUtils.isNotEmpty( connectionDetails.getRootPath() ) ) {
       VariableSpace space = getSpace( connectionDetails );
-      String resolvedRootLocation = getVar( connectionDetails.getRootPath(), space );
-      if ( StringUtils.isNotBlank( resolvedRootLocation ) ) {
-        return resolvedRootLocation;
+      String resolvedRootPath = getVar( connectionDetails.getRootPath(), space );
+      if ( StringUtils.isNotBlank( resolvedRootPath ) ) {
+        return normalizeRootPath( resolvedRootPath );
       }
     }
 
     return null;
+  }
+
+  private String normalizeRootPath( String rootPath ) {
+    if ( StringUtils.isNotEmpty( rootPath ) ) {
+      if ( !rootPath.startsWith( DELIMITER ) ) {
+        rootPath = DELIMITER + rootPath;
+      }
+      if (rootPath.endsWith( DELIMITER ) ) {
+        rootPath = rootPath.substring( 0, rootPath.length() - 1 );
+      }
+    }
+    return rootPath;
+  }
+
+  private String buildUrl( VFSConnectionDetails connectionDetails, String rootPath ) {
+    String domain = connectionDetails.getDomain();
+    if ( !domain.isEmpty() ) {
+      domain = DELIMITER + domain;
+    }
+    return connectionDetails.getType() + ":/" + domain + rootPath;
   }
 }

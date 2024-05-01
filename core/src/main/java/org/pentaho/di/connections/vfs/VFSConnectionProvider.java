@@ -83,7 +83,7 @@ public interface VFSConnectionProvider<T extends VFSConnectionDetails> extends C
     return test( connectionDetails );
   }
 
-  default String getResolvedRootPath(T connectionDetails ) {
+  default String getResolvedRootPath( T connectionDetails ) {
     return connectionDetails.getRootPath();
   }
 

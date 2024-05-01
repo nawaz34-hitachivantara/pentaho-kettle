@@ -59,6 +59,9 @@ public class OtherConnectionDetails implements VFSConnectionDetails {
   @MetaStoreAttribute
   private String description;
 
+  @MetaStoreAttribute
+  private String rootPath;
+
   public String getHost() {
     return host;
   }
@@ -129,5 +132,25 @@ public class OtherConnectionDetails implements VFSConnectionDetails {
   @Override
   public void setSpace( VariableSpace space ) {
     this.space = space;
+  }
+
+  @Override
+  public boolean isSupportsRootPath() {
+    return true;
+  }
+
+  @Override
+  public boolean isRootPathRequired() {
+    return false;
+  }
+
+  @Override
+  public String getRootPath() {
+    return rootPath;
+  }
+
+  @Override
+  public void setRootPath( String rootPath ) {
+    this.rootPath = rootPath;
   }
 }

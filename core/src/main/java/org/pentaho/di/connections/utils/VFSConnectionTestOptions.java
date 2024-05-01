@@ -23,17 +23,17 @@
 
 package org.pentaho.di.connections.utils;
 
+/**
+ * This class contains the options to ignore root path for a VFS Connection.
+ */
 public class VFSConnectionTestOptions {
 
   public VFSConnectionTestOptions() {
   }
 
-  /**
-   *
-   * @param ignoreRootLocation
-   */
-  public VFSConnectionTestOptions( boolean ignoreRootLocation ) {
-    this.ignoreRootPath = ignoreRootLocation;
+
+  public VFSConnectionTestOptions( boolean ignoreRootPath ) {
+    this.ignoreRootPath = ignoreRootPath;
   }
 
 
@@ -41,7 +41,7 @@ public class VFSConnectionTestOptions {
 
 
   /**
-   * Returns true if vfs connection root path is ignored
+   * Returns {@code true} if vfs connection root path is ignored; {@code false}, otherwise.
    * @return boolean
    */
   public boolean isIgnoreRootPath() {
@@ -50,8 +50,9 @@ public class VFSConnectionTestOptions {
 
 
   /**
-   * Sets the ignoreRootPath, given as a boolean
-   * @param ignoreRootPath ignoring the root path
+   * Sets the ignoreRootPath.
+   * @param ignoreRootPath ignoring the root path.
+   * {@code true} to ignore the root path; {@code false}, otherwise.
    */
   public void setIgnoreRootPath( boolean ignoreRootPath ) {
 
