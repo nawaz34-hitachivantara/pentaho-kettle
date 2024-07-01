@@ -2,7 +2,7 @@
  *
  * Pentaho Data Integration
  *
- * Copyright (C) 2017-2023 by Hitachi Vantara : http://www.pentaho.com
+ * Copyright (C) 2017-2024 by Hitachi Vantara : http://www.pentaho.com
  *
  *******************************************************************************
  *
@@ -25,6 +25,7 @@ package org.pentaho.di.plugins.fileopensave.dialog;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.vfs2.FileSystemException;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
@@ -353,12 +354,16 @@ public class FileOpenSaveDialog extends Dialog implements FileDetails {
 
   LabelProvider labelProvider = new LabelProvider() {
     @Override public String getText( Object element ) {
-      if ( element instanceof Tree ) {
-        return ( (Tree) element ).getName();
-      } else if ( element instanceof Directory ) {
-        return ( (Directory) element ).getName();
-      } else if ( element instanceof File ) {
-        return ( (File) element ).getName();
+      try {
+        if ( element instanceof Tree ) {
+          return ( (Tree) element ).getNameDecoded();
+        } else if ( element instanceof Directory ) {
+          return ( (Directory) element ).getNameDecoded();
+        } else if ( element instanceof File ) {
+          return ((File) element).getNameDecoded();
+        }
+      } catch ( FileSystemException fileSystemException ) {
+        log.logError( "Could not load resource", fileSystemException );
       }
       return null;
     }
@@ -1471,7 +1476,12 @@ public class FileOpenSaveDialog extends Dialog implements FileDetails {
 
       @Override public String getText( Object element ) {
         File f = (File) element;
-        return f.getName();
+        try {
+          return f.getNameDecoded();
+        } catch ( FileSystemException fileSystemException ) {
+          log.logError( "Could not load resource", fileSystemException );
+        }
+        return  null;
       }
 
       @Override public Image getImage( Object element ) {
