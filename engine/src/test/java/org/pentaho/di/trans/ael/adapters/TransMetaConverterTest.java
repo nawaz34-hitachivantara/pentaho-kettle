@@ -25,7 +25,6 @@
 package org.pentaho.di.trans.ael.adapters;
 
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -34,7 +33,6 @@ import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.startsWith;
-import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -87,8 +85,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 
 public class TransMetaConverterTest {
@@ -96,15 +101,7 @@ public class TransMetaConverterTest {
 
   @Spy StepMetaInterface stepMetaInterface = new DummyTransMeta();
 
-  @Mock
-  ConnectionFileObject connectionFileObject;
-
   final String XML = "<xml></xml>";
-
-  @Before
-  public void before() throws KettleException {
-    when( stepMetaInterface.getXML() ).thenReturn( XML );
-  }
 
   @BeforeClass
   public static void init() throws Exception {
@@ -412,10 +409,12 @@ public class TransMetaConverterTest {
 
     TransMeta cloneTransMeta = (TransMeta) cloneTransMetaCaptor.getResult();
 
+    TransMeta spyCloneTransMeta = spy( cloneTransMeta );
+    spyCloneTransMeta.getXML();
     verify( originalTransMeta ).realClone( eq( false ) );
     assertThat( cloneTransMeta.getName(), is( originalTransMeta.getName() ) );
     verify( originalTransMeta, never() ).getXML();
-    verify( cloneTransMeta ).getXML();
+    verify( spyCloneTransMeta ).getXML();
   }
   @Test
   public void testResolveStepMetaResources() throws KettleException, MetaStoreException {
@@ -447,6 +446,7 @@ public class TransMetaConverterTest {
     mockStatic( KettleVFS.class );
 
     doReturn( transMeta ).when( transMeta ).realClone( false );
+    ConnectionFileObject connectionFileObject = mock( ConnectionFileObject.class );
     when( KettleVFS.getFileObject( any() ) ).thenReturn( connectionFileObject );
     when( connectionFileObject.getAELSafeURIString() ).thenReturn( FINAL_NAME );
 

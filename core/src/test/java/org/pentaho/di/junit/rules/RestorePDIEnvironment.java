@@ -87,7 +87,9 @@ public class RestorePDIEnvironment extends ExternalResource {
     if ( Props.isInitialized() ) {
       Props.getInstance().reset();
     }
-    KettleVFS.getInstance().reset();
+    if( KettleVFS.getInstance() != null ){
+      KettleVFS.getInstance().reset();
+    }
     XMLHandlerCache.getInstance().clear();
     ValueMetaFactory.pluginRegistry = PluginRegistry.getInstance();
     // under no circumstance reset the LoggingRegistry
