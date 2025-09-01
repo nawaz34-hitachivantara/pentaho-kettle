@@ -1384,9 +1384,9 @@ public class TextFileInputMeta extends BaseFileInputMeta<BaseFileInputAdditional
       if ( inputFiles.fileName[i] != null && !inputFiles.fileName[i].isEmpty() ) {
         try {
           FileObject fileObject = KettleVFS.getFileObject( getParentStepMeta().getParentTransMeta().environmentSubstitute( inputFiles.fileName[i] ) );
-          if ( AliasedFileObject.isAliasedFile( fileObject ) ) {
+          /*if ( AliasedFileObject.isAliasedFile( fileObject ) ) {
             inputFiles.fileName[i] = ( (AliasedFileObject) fileObject ).getAELSafeURIString();
-          }
+          }*/
         } catch ( KettleFileException e ) {
           throw new RuntimeException( e );
         }
